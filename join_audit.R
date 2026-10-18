@@ -194,6 +194,9 @@ join_checked <- function(x, y, by,
   unmatched_y_n <- nrow(y_unmatched)
   status <- if (length(violations)) "FAIL" else if (unmatched_x_n > 0L || unmatched_y_n > 0L) "WARN" else "PASS"
 
+  # Keep technical row IDs out of the public join result.
+  result[, (c(x_id, y_id)) := NULL]
+
   report <- data.table(
     check = c(
       "Rows in x",
