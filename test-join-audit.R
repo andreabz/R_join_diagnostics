@@ -15,6 +15,7 @@ test_that("left many-to-one join preserves every row of x", {
   expect_equal(a$status, "PASS")
   expect_equal(nrow(a$result), nrow(x))
   expect_equal(a$report[check == "Unmatched rows in x", value], 0)
+  expect_false(any(grepl("^\\.\\.audit_row_id", names(a$result))))
 })
 
 test_that("unmatched keys produce WARN and diagnostics", {
