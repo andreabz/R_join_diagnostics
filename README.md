@@ -7,7 +7,8 @@ A small `data.table`-based utility for auditing joins in R scripts and automated
 - Supports left, inner, and full joins.
 - Requires an explicit expected relationship: `one-to-one`, `many-to-one`, `one-to-many`, or `many-to-many`.
 - Validates key columns, key types, missing key values, and uniqueness constraints before joining.
-- Reports unmatched keys and row replication diagnostics.
+- Reports unmatched rows, key-frequency diagnostics, row loss by join type, and row replication.
+- Supports composite keys and handles empty tables explicitly.
 - Returns a structured audit object with `PASS`, `WARN`, or `FAIL` status.
 - Keeps caller-owned input tables unchanged.
 - Uses `data.table`; no tidyverse dependencies.
@@ -56,7 +57,7 @@ result <- audit$result
 - `WARN`: the join satisfies the declared relationship, but one or more keys have no match.
 - `FAIL`: pre-join validation or a post-join invariant failed. A pre-validation failure prevents the join from running.
 
-Unmatched keys are diagnostic only; no threshold is applied by default. Missing key values are rejected. No automatic key normalization, coercion, or deduplication is performed.
+Unmatched rows are counted per input row, not per distinct key. Rows absent from the result depend on join type: a left join preserves rows from `x`, an inner join can exclude rows from either input, and a full join retains unmatched rows from both inputs. Replication diagnostics count original rows that occur more than once in the result. Unmatched rows are diagnostic only; no threshold is applied by default. Missing key values are rejected. No automatic key normalization, coercion, or deduplication is performed.
 
 ## Run the unit tests
 
