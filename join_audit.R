@@ -113,13 +113,17 @@ join_checked <- function(x, y, by,
 
   empty_result <- NULL
   if (!isTRUE(pre$ok)) {
+    # Invalid inputs may not have a row count; keep the failure report well-formed.
+    safe_nrow <- function(z) {
+      if (is.data.frame(z)) nrow(z) else NA_integer_
+    }
     out <- list(
       result = empty_result,
       status = "FAIL",
       violations = pre$errors,
       report = data.table(
         check = c("Rows in x", "Rows in y", "Rows in result"),
-        value = c(nrow(x), nrow(y), NA_integer_)
+        value = c(safe_nrow(x), safe_nrow(y), NA_integer_)
       ),
       key_audit = NULL,
       x_unmatched = NULL,
