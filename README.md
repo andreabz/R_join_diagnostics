@@ -77,3 +77,7 @@ testthat::test_file("test-join-audit.R")
 ## Continuous integration
 
 GitHub Actions runs the unit tests on every push and pull request. See `.github/workflows/test.yml`.
+
+## License
+
+This project is licensed under the GNU General Public License v3.0 only. See [LICENSE](LICENSE) for the full text.
