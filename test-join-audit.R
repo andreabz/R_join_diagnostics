@@ -143,6 +143,12 @@ test_that("row multiplication is detected when the relationship is violated", {
   expect_equal(nrow(a$x_replicated), 1L)
   expect_equal(a$x_replicated$n_result, 2L)
   expect_equal(a$report[check == "Replicated rows from x", value], 1)
+  expect_equal(
+    a$result[order(id, label), .(id, value, label)],
+    data.table(id = c(1L, 1L, 2L),
+               value = c("a", "a", "b"),
+               label = c("p", "q", "r"))
+  )
 
   b <- join_checked(x, y, by = "id", type = "left",
                     relationship = "many-to-one")
@@ -169,6 +175,12 @@ test_that("one-to-many allows duplicate keys in y when x keys are unique", {
   expect_equal(nrow(a$result), 3L)
   expect_equal(nrow(a$x_replicated), 1L)
   expect_equal(nrow(a$y_replicated), 0L)
+  expect_equal(
+    a$result[order(id, y_value), .(id, x_value, y_value)],
+    data.table(id = c(1L, 1L, 2L),
+               x_value = c("a", "a", "b"),
+               y_value = c("p", "q", "r"))
+  )
 })
 
 test_that("one-to-many rejects duplicate keys in x", {
