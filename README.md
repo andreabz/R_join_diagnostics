@@ -65,7 +65,8 @@ From the repository root:
 
 ```r
 results <- testthat::test_file("test-join-audit.R")
-if (!testthat::is_successful(results)) quit(status = 1)
+summary <- as.data.frame(results)
+if (any(summary$failed > 0L | summary$error)) quit(status = 1)
 ```
 
 ## Current scope and limitations
