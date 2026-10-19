@@ -99,7 +99,7 @@ test_that("input tables are not modified", {
 
 test_that("composite keys are audited as a single key", {
   x <- data.table(region = c("N", "N", "S"), id = c(1L, 2L, 1L), value = 1:3)
-  y <- data.table(region = c("N", "S"), id = c(1L, 1L), label = c("a", "b"))
+  y <- data.table(region = c("N", "N", "S"), id = c(1L, 2L, 1L), label = c("a", "b", "c"))
 
   a <- join_checked(x, y, by = c("region", "id"), type = "left",
                     relationship = "many-to-one")
