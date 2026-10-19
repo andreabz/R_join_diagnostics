@@ -297,3 +297,101 @@ test_that("validate_join reports invalid relationship without throwing", {
   expect_false(v$ok)
   expect_true(any(grepl("Invalid relationship", v$errors, fixed = TRUE)))
 })
+
+test_that("one-to-one accepts unique keys on both sides", {
+  x <- data.table(id = c(1L, 2L), x_value = c("a", "b"))
+  y <- data.table(id = c(1L, 2L), y_value = c("p", "q"))
+
+  a <- join_checked(x, y, by = "id", type = "left",
+                    relationship = "one-to-one")
+
+  expect_equal(a$status, "PASS")
+  expect_equal(nrow(a$result), 2L)
+  expect_equal(nrow(a$x_replicated), 0L)
+  expect_equal(nrow(a$y_replicated), 0L)
+})
+
+test_that("one-to-one rejects duplicate keys in x", {
+  x <- data.table(id = c(1L, 1L), x_value = c("a", "b"))
+  y <- data.table(id = 1L, y_value = "p")
+
+  a <- join_checked(x, y, by = "id", type = "left",
+                    relationship = "one-to-one")
+
+  expect_equal(a$status, "FAIL")
+  expect_null(a$result)
+  expect_true(any(grepl("unique keys in x", a$violations, fixed = TRUE)))
+})
+
+test_that("one-to-one rejects duplicate keys in y", {
+  x <- data.table(id = 1L, x_value = "a")
+  y <- data.table(id = c(1L, 1L), y_value = c("p", "q"))
+
+  a <- join_checked(x, y, by = "id", type = "left",
+                    relationship = "one-to-one")
+
+  expect_equal(a$status, "FAIL")
+  expect_null(a$result)
+  expect_true(any(grepl("unique keys in y", a$violations, fixed = TRUE)))
+})
+
+test_that("many-to-one permits duplicate keys in x but rejects them in y", {
+  x <- data.table(id = c(1L, 1L, 2L), x_value = c("a", "b", "c"))
+  y_unique <- data.table(id = c(1L, 2L), y_value = c("p", "q"))
+
+  a <- join_checked(x, y_unique, by = "id", type = "left",
+                    relationship = "many-to-one")
+
+  expect_equal(a$status, "PASS")
+  expect_equal(nrow(a$result), 3L)
+  expect_equal(nrow(a$x_replicated), 0L)
+  expect_equal(nrow(a$y_replicated), 1L)
+
+  y_duplicate <- data.table(id = c(1L, 1L, 2L),
+                            y_value = c("p", "q", "r"))
+  b <- join_checked(x, y_duplicate, by = "id", type = "left",
+                    relationship = "many-to-one")
+
+  expect_equal(b$status, "FAIL")
+  expect_null(b$result)
+  expect_true(any(grepl("unique keys in y", b$violations, fixed = TRUE)))
+})
+
+test_that("one-to-many permits duplicate keys in y but rejects them in x", {
+  x_unique <- data.table(id = c(1L, 2L), x_value = c("a", "b"))
+  y <- data.table(id = c(1L, 1L, 2L), y_value = c("p", "q", "r"))
+
+  a <- join_checked(x_unique, y, by = "id", type = "left",
+                    relationship = "one-to-many")
+
+  expect_equal(a$status, "PASS")
+  expect_equal(nrow(a$result), 3L)
+  expect_equal(nrow(a$x_replicated), 1L)
+  expect_equal(nrow(a$y_replicated), 0L)
+
+  x_duplicate <- data.table(id = c(1L, 1L, 2L),
+                            x_value = c("a", "b", "c"))
+  b <- join_checked(x_duplicate, y, by = "id", type = "left",
+                    relationship = "one-to-many")
+
+  expect_equal(b$status, "FAIL")
+  expect_null(b$result)
+  expect_true(any(grepl("unique keys in x", b$violations, fixed = TRUE)))
+})
+
+test_that("many-to-many permits replication from both inputs", {
+  x <- data.table(id = c(1L, 1L), x_value = c("a", "b"))
+  y <- data.table(id = c(1L, 1L, 1L), y_value = c("p", "q", "r"))
+
+  a <- join_checked(x, y, by = "id", type = "left",
+                    relationship = "many-to-many")
+
+  expect_equal(a$status, "PASS")
+  expect_equal(nrow(a$result), 6L)
+  expect_equal(nrow(a$x_replicated), 2L)
+  expect_equal(a$x_replicated$n_result, c(3L, 3L))
+  expect_equal(nrow(a$y_replicated), 3L)
+  expect_equal(a$y_replicated$n_result, c(2L, 2L, 2L))
+  expect_equal(a$report[check == "Replicated rows from x", value], 2)
+  expect_equal(a$report[check == "Replicated rows from y", value], 3)
+})
