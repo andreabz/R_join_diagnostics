@@ -32,15 +32,38 @@ library(data.table)
   ]
 }
 
+# Resolve a choice argument without letting match.arg() bypass structured validation.
+.resolve_choice <- function(value, choices) {
+  if (length(value) == 1L && is.na(value)) return(NA_character_)
+  tryCatch(match.arg(value, choices), error = function(e) NA_character_)
+}
+
 # Validate prerequisites without modifying the inputs.
-validate_join <- function(x, y, by,
+validate_join <- function(x, y, by = NULL,
                           relationship = c("many-to-one", "one-to-one",
                                            "one-to-many", "many-to-many")) {
-  relationship <- match.arg(relationship)
+  relationship_choices <- c("many-to-one", "one-to-one",
+                            "one-to-many", "many-to-many")
+  relationship_value <- .resolve_choice(relationship, relationship_choices)
   errors <- character()
 
+  if (is.na(relationship_value)) {
+    errors <- c(errors, sprintf(
+      "Invalid relationship. Choose one of: %s.",
+      paste(relationship_choices, collapse = ", ")
+    ))
+  }
+
   if (!is.data.table(x) || !is.data.table(y)) {
-    return(list(ok = FALSE, errors = "x and y must be data.table objects."))
+    return(list(
+      ok = FALSE,
+      errors = unique(c(errors, "x and y must be data.table objects.")),
+      relationship = relationship_value
+    ))
+  }
+  if (length(errors)) {
+    return(list(ok = FALSE, errors = unique(errors),
+                relationship = relationship_value))
   }
   if (!is.character(by) || length(by) < 1L || anyNA(by) ||
       any(!nzchar(by)) || anyDuplicated(by)) {
@@ -101,15 +124,35 @@ validate_join <- function(x, y, by,
 # Execute the join and return the result together with the audit.
 # With stop_on_fail = FALSE, retain the diagnostic object; use assert_join()
 # to stop the pipeline explicitly.
-join_checked <- function(x, y, by,
+join_checked <- function(x, y, by = NULL,
                          type = c("left", "inner", "full"),
                          relationship = c("many-to-one", "one-to-one",
                                           "one-to-many", "many-to-many"),
                          stop_on_fail = FALSE) {
-  type <- match.arg(type)
-  relationship <- match.arg(relationship)
+  type_choices <- c("left", "inner", "full")
+  relationship_choices <- c("many-to-one", "one-to-one",
+                            "one-to-many", "many-to-many")
+  type_value <- .resolve_choice(type, type_choices)
+  relationship_value <- .resolve_choice(relationship, relationship_choices)
 
-  pre <- validate_join(x, y, by, relationship)
+  pre <- if (is.na(type_value)) {
+    list(
+      ok = FALSE,
+      errors = sprintf("Invalid join type. Choose one of: %s.",
+                       paste(type_choices, collapse = ", ")),
+      relationship = relationship_value
+    )
+  } else {
+    validate_join(x, y, by, relationship_value)
+  }
+  if (is.na(relationship_value)) {
+    pre$ok <- FALSE
+    pre$errors <- unique(c(
+      pre$errors,
+      sprintf("Invalid relationship. Choose one of: %s.",
+              paste(relationship_choices, collapse = ", "))
+    ))
+  }
 
   empty_result <- NULL
   if (!isTRUE(pre$ok)) {
@@ -131,12 +174,15 @@ join_checked <- function(x, y, by,
       x_replicated = NULL,
       y_replicated = NULL,
       validation = pre,
-      type = type,
-      relationship = relationship
+      type = if (is.na(type_value)) type else type_value,
+      relationship = if (is.na(relationship_value)) relationship else relationship_value
     )
     if (stop_on_fail) assert_join(out)
     return(out)
   }
+
+  type <- type_value
+  relationship <- relationship_value
 
   # Work on copies to avoid mutating caller-owned objects.
   xx <- copy(x)
