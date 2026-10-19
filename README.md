@@ -53,11 +53,15 @@ result <- audit$result
 
 ## Audit statuses
 
-- `PASS`: the join satisfies the declared relationship and no unmatched keys were found.
-- `WARN`: the join satisfies the declared relationship, but one or more keys have no match.
-- `FAIL`: pre-join validation or a post-join invariant failed. A pre-validation failure prevents the join from running.
+- `PASS`: no contract violation exists and no unmatched rows trigger a warning under the join-specific rules.
+- `WARN`: the join satisfies the declared relationship, but unmatched rows warrant review.
+- `FAIL`: input validation, the declared relationship, or a join invariant is violated. A pre-validation failure prevents the join from running.
 
-Unmatched rows are counted per input row, not per distinct key. Rows absent from the result depend on join type: a left join preserves rows from `x`, an inner join can exclude rows from either input, and a full join retains unmatched rows from both inputs. Replication diagnostics count original rows that occur more than once in the result. Unmatched rows are diagnostic only; no threshold is applied by default. Missing key values are rejected. No automatic key normalization, coercion, or deduplication is performed.
+Warning rules depend on join type: for `left`, unmatched rows in `x` trigger `WARN`, while unmatched rows in `y` alone do not; for `inner` and `full`, unmatched rows on either side trigger `WARN`. Unmatched rows alone never trigger `FAIL`.
+
+Unmatched rows are counted per input row, not per distinct key. Rows absent from the result are distinct from unmatched rows: a left join preserves unmatched rows from `x`, an inner join excludes unmatched rows, and a full join retains unmatched rows from both inputs. Replication diagnostics count original rows that occur more than once in the result, not additional copies. Missing key values are rejected. No automatic key normalization, coercion, or deduplication is performed.
+
+The detailed functional contract is documented in [docs/functional-contract.md](docs/functional-contract.md).
 
 ## Run the unit tests
 
