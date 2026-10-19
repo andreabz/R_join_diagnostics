@@ -27,4 +27,5 @@ jobs:
         run: Rscript -e 'stopifnot(requireNamespace("data.table", quietly = TRUE), requireNamespace("testthat", quietly = TRUE))'
 
       - name: Run unit tests
-        run: Rscript -e 'testthat::test_file("test-join-audit.R")'
+        run: |
+          Rscript -e 'results <- testthat::test_file("test-join-audit.R"); summary <- as.data.frame(results); if (any(summary$failed > 0L | summary$error)) quit(status = 1)'

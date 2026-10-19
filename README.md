@@ -64,7 +64,9 @@ Unmatched rows are counted per input row, not per distinct key. Rows absent from
 From the repository root:
 
 ```r
-testthat::test_file("test-join-audit.R")
+results <- testthat::test_file("test-join-audit.R")
+summary <- as.data.frame(results)
+if (any(summary$failed > 0L | summary$error)) quit(status = 1)
 ```
 
 ## Current scope and limitations
