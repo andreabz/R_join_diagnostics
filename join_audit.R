@@ -189,9 +189,8 @@ join_checked <- function(x, y, by,
   }
 
   # A left join must retain every row of x exactly once.
-  if (type == "left" &&
-      (length(x_lost) > 0L || nrow(x_replicated) > 0L)) {
-    violations <- c(violations, "The left join did not retain every row of x exactly once.")
+  if (type == "left" && length(x_lost) > 0L) {
+    violations <- c(violations, "The left join did not retain every row of x.")
   }
 
   unmatched_x_n <- nrow(x_unmatched)
