@@ -241,3 +241,59 @@ test_that("one-to-many rejects duplicate keys in x", {
   expect_equal(a$status, "FAIL")
   expect_true(any(grepl("unique keys in x", a$violations)))
 })
+
+test_that("omitted or invalid by returns a structured failure", {
+  x <- data.table(id = 1L)
+  y <- data.table(id = 1L)
+
+  omitted <- join_checked(x, y)
+  null_by <- join_checked(x, y, by = NULL)
+  empty_by <- join_checked(x, y, by = character())
+
+  for (a in list(omitted, null_by, empty_by)) {
+    expect_equal(a$status, "FAIL")
+    expect_null(a$result)
+    expect_true(any(grepl("`by` must contain", a$violations, fixed = TRUE)))
+  }
+})
+
+test_that("invalid join type returns a structured failure", {
+  x <- data.table(id = 1L)
+  y <- data.table(id = 1L)
+
+  a <- join_checked(x, y, by = "id", type = "cross")
+  expect_equal(a$status, "FAIL")
+  expect_null(a$result)
+  expect_true(any(grepl("Invalid join type", a$violations, fixed = TRUE)))
+})
+
+test_that("invalid relationship returns a structured failure", {
+  x <- data.table(id = 1L)
+  y <- data.table(id = 1L)
+
+  a <- join_checked(x, y, by = "id", relationship = "one-to-many-to-many")
+  expect_equal(a$status, "FAIL")
+  expect_null(a$result)
+  expect_true(any(grepl("Invalid relationship", a$violations, fixed = TRUE)))
+})
+
+test_that("invalid join type and relationship are both reported", {
+  x <- data.table(id = 1L)
+  y <- data.table(id = 1L)
+
+  a <- join_checked(x, y, by = "id", type = "cross",
+                    relationship = "invalid")
+  expect_equal(a$status, "FAIL")
+  expect_null(a$result)
+  expect_true(any(grepl("Invalid join type", a$violations, fixed = TRUE)))
+  expect_true(any(grepl("Invalid relationship", a$violations, fixed = TRUE)))
+})
+
+test_that("validate_join reports invalid relationship without throwing", {
+  x <- data.table(id = 1L)
+  y <- data.table(id = 1L)
+
+  v <- validate_join(x, y, by = "id", relationship = "invalid")
+  expect_false(v$ok)
+  expect_true(any(grepl("Invalid relationship", v$errors, fixed = TRUE)))
+})
