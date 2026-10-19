@@ -188,14 +188,36 @@ join_checked <- function(x, y, by,
     violations <- c(violations, "Rows from y were replicated despite the declared relationship.")
   }
 
-  # A left join must retain every row of x at least once; permitted relationships may replicate rows.
+  # Enforce row-retention invariants that define each join type.
   if (type == "left" && length(x_lost) > 0L) {
     violations <- c(violations, "The left join did not retain every row of x.")
+  }
+  if (type == "inner" && (anyNA(result[[x_id]]) || anyNA(result[[y_id]]))) {
+    violations <- c(violations, "The inner join produced a row without a matching pair of input rows.")
+  }
+  if (type == "full" && length(x_lost) > 0L) {
+    violations <- c(violations, "The full join did not retain every row of x.")
+  }
+  if (type == "full" && length(y_lost) > 0L) {
+    violations <- c(violations, "The full join did not retain every row of y.")
   }
 
   unmatched_x_n <- nrow(x_unmatched)
   unmatched_y_n <- nrow(y_unmatched)
-  status <- if (length(violations)) "FAIL" else if (unmatched_x_n > 0L || unmatched_y_n > 0L) "WARN" else "PASS"
+  # Unmatched rows in y alone are expected for a left join and do not trigger WARN.
+  warning_condition <- switch(
+    type,
+    left = unmatched_x_n > 0L,
+    inner = unmatched_x_n > 0L || unmatched_y_n > 0L,
+    full = unmatched_x_n > 0L || unmatched_y_n > 0L
+  )
+  status <- if (length(violations)) {
+    "FAIL"
+  } else if (warning_condition) {
+    "WARN"
+  } else {
+    "PASS"
+  }
 
   # Keep technical row IDs out of the public join result.
   result[, (c(x_id, y_id)) := NULL]
