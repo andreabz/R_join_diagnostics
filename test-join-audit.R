@@ -30,6 +30,41 @@ test_that("unmatched keys produce WARN and diagnostics", {
   expect_equal(nrow(a$result), 2L)
 })
 
+test_that("unmatched rows in y alone do not warn for a left join", {
+  x <- data.table(id = 1L, value = 10)
+  y <- data.table(id = 2L, label = "unmatched")
+
+  a <- join_checked(x, y, by = "id", type = "left",
+                    relationship = "one-to-one")
+  expect_equal(a$status, "PASS")
+  expect_equal(nrow(a$y_unmatched), 1L)
+  expect_equal(a$report[check == "Unmatched rows in y", value], 1)
+  expect_equal(a$report[check == "Rows from y absent from result", value], 1)
+  expect_equal(nrow(a$result), 1L)
+})
+
+test_that("full join reports FAIL if an input row is not retained", {
+  x <- data.table(id = 1L, value = "x")
+  y <- data.table(id = 2L, label = "y")
+  a <- join_checked(x, y, by = "id", type = "full",
+                    relationship = "one-to-one")
+  expect_false(a$status == "FAIL")
+  expect_equal(nrow(a$result), 2L)
+  expect_equal(a$report[check == "Rows from x absent from result", value], 0)
+  expect_equal(a$report[check == "Rows from y absent from result", value], 0)
+})
+
+test_that("inner join result contains only matched pairs", {
+  x <- data.table(id = c(1L, 2L), value = c("a", "b"))
+  y <- data.table(id = c(2L, 3L), label = c("matched", "unmatched"))
+  a <- join_checked(x, y, by = "id", type = "inner",
+                    relationship = "one-to-one")
+  expect_equal(a$status, "WARN")
+  expect_equal(nrow(a$result), 1L)
+  expect_equal(a$result$id, 2L)
+  expect_equal(a$report[check == "Rows in result", value], 1)
+})
+
 test_that("duplicates incompatible with many-to-one fail validation", {
   x <- data.table(id = c(1L, 2L), value = c(10, 20))
   y <- data.table(id = c(1L, 1L, 2L), label = c("a", "b", "c"))
