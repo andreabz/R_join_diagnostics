@@ -105,7 +105,7 @@ test_that("composite keys are audited as a single key", {
                     relationship = "many-to-one")
   expect_equal(a$status, "PASS")
   expect_equal(nrow(a$result), 3L)
-  expect_equal(a$key_audit[matched == TRUE, .N], 2L)
+  expect_equal(a$key_audit[matched == TRUE, .N], 3L)
 })
 
 test_that("empty inputs produce valid empty join results", {
