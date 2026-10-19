@@ -28,4 +28,4 @@ jobs:
 
       - name: Run unit tests
         run: |
-          Rscript -e 'results <- testthat::test_file("test-join-audit.R"); if (!testthat::is_successful(results)) quit(status = 1)'
+          Rscript -e 'results <- testthat::test_file("test-join-audit.R"); summary <- as.data.frame(results); if (any(summary$failed > 0L | summary$error)) quit(status = 1)'
