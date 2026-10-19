@@ -188,7 +188,7 @@ join_checked <- function(x, y, by,
     violations <- c(violations, "Rows from y were replicated despite the declared relationship.")
   }
 
-  # A left join must retain every row of x exactly once.
+  # A left join must retain every row of x at least once; permitted relationships may replicate rows.
   if (type == "left" && length(x_lost) > 0L) {
     violations <- c(violations, "The left join did not retain every row of x.")
   }
