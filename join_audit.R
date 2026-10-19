@@ -34,7 +34,11 @@ library(data.table)
 
 # Resolve a choice argument without letting match.arg() bypass structured validation.
 .resolve_choice <- function(value, choices) {
-  if (length(value) == 1L && is.na(value)) return(NA_character_)
+  if (identical(value, choices)) return(choices[[1L]])
+  if (!is.character(value) || length(value) != 1L ||
+      is.na(value) || !nzchar(value)) {
+    return(NA_character_)
+  }
   tryCatch(match.arg(value, choices), error = function(e) NA_character_)
 }
 
