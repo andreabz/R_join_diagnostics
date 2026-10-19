@@ -32,15 +32,29 @@ test_that("unmatched keys produce WARN and diagnostics", {
 
 test_that("unmatched rows in y alone do not warn for a left join", {
   x <- data.table(id = 1L, value = 10)
-  y <- data.table(id = 2L, label = "unmatched")
+  y <- data.table(
+    id = c(1L, 2L),
+    label = c("matched", "unmatched")
+  )
 
-  a <- join_checked(x, y, by = "id", type = "left",
-                    relationship = "one-to-one")
+  a <- join_checked(
+    x, y,
+    by = "id",
+    type = "left",
+    relationship = "one-to-one"
+  )
+
   expect_equal(a$status, "PASS")
+  expect_equal(nrow(a$x_unmatched), 0L)
   expect_equal(nrow(a$y_unmatched), 1L)
-  expect_equal(a$report[check == "Unmatched rows in y", value], 1)
-  expect_equal(a$report[check == "Rows from y absent from result", value], 1)
+  expect_equal(
+    a$report[check == "Unmatched rows in y", value], 1
+  )
+  expect_equal(
+    a$report[check == "Rows from y absent from result", value], 1
+  )
   expect_equal(nrow(a$result), 1L)
+  expect_equal(a$result$id, 1L)
 })
 
 test_that("full join retains unmatched rows from both inputs", {
