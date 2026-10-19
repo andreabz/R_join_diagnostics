@@ -43,12 +43,12 @@ test_that("unmatched rows in y alone do not warn for a left join", {
   expect_equal(nrow(a$result), 1L)
 })
 
-test_that("full join reports FAIL if an input row is not retained", {
+test_that("full join retains unmatched rows from both inputs", {
   x <- data.table(id = 1L, value = "x")
   y <- data.table(id = 2L, label = "y")
   a <- join_checked(x, y, by = "id", type = "full",
                     relationship = "one-to-one")
-  expect_false(a$status == "FAIL")
+  expect_equal(a$status, "WARN")
   expect_equal(nrow(a$result), 2L)
   expect_equal(a$report[check == "Rows from x absent from result", value], 0)
   expect_equal(a$report[check == "Rows from y absent from result", value], 0)
